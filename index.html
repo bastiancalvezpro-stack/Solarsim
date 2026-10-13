@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulation du Système Solaire</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <header class="hud-top">
+    <div class="hud-title">
+      <span class="hud-title-icon">⬡</span>
+      <span>SOLAR<strong>SIM</strong></span>
+    </div>
+    <div class="hud-center">
+      <div class="hud-stat">
+        <span class="hud-label">TEMPS SIMULÉ</span>
+        <span id="hud-time-value" class="hud-value">J+0</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-label">ZOOM</span>
+        <span id="hud-zoom-value" class="hud-value">1.0×</span>
+      </div>
+      <div class="hud-stat">
+        <span class="hud-label">PLANÈTES</span>
+        <span id="hud-planets-value" class="hud-value">—</span>
+      </div>
+    </div>
+    <div class="hud-right">
+      <button class="btn-secondary" onclick="document.getElementById('file-input').click()">
+        ↑ Charger JSON
+      </button>
+      <input type="file" id="file-input" accept=".json" style="display:none" />
+    </div>
+  </header>
+
+  <div class="controls-bar">
+    <button id="btn-reset" class="btn-control" title="Retour au début">⏮</button>
+    <button id="btn-play-pause" class="btn-control btn-play" title="Play / Pause">▶</button>
+    
+    <div class="method-wrap" style="display: flex; align-items: center; gap: 8px; margin: 0 12px;">
+      <span class="hud-label">MÉTHODE</span>
+      <select id="method-select" style="background: #111424; color: #ffffff; border: 1px solid #334155; padding: 4px 28px 4px 8px; border-radius: 4px; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; outline: none; letter-spacing: 0.05em; transition: border-color 0.2s; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 8px top 50%; background-size: 8px auto;">
+        <option value="all">TOUTES</option>
+      </select>
+    </div>
+
+    <div class="speed-wrap">
+      <span class="hud-label">VITESSE</span>
+      <input type="range" id="speed-slider" min="1" max="500" value="30" />
+      <span id="speed-value" class="speed-val">30×</span>
+    </div>
+    
+    <div class="progress-wrap">
+      <div id="progress-bar" class="progress-inner"></div>
+    </div>
+    <span id="progress-label" class="progress-label">0 / 36500</span>
+  </div>
+
+  <aside id="info-panel" class="info-panel info-panel--hidden">
+    <button id="info-close" class="info-close" title="Fermer">✕</button>
+    <div class="info-header">
+      <div id="info-dot" class="info-dot"></div>
+      <div>
+        <div id="info-name" class="info-name">—</div>
+        <div id="info-method" class="info-method">méthode —</div>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div class="info-row"><span class="info-label">Masse</span>            <span id="info-mass"       class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Périhélie</span>        <span id="info-perihelion" class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Vitesse actuelle</span> <span id="info-speed-val"  class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Position X</span>       <span id="info-px"         class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Position Y</span>       <span id="info-py"         class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Position Z</span>       <span id="info-pz"         class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Temps simulé</span>     <span id="info-time"       class="info-val">—</span></div>
+      <div class="info-row"><span class="info-label">Points calculés</span>  <span id="info-npts"       class="info-val">—</span></div>
+    </div>
+    <div id="info-warn" class="info-warn" style="display:none">
+      <span>⚠ </span><span id="info-warn-text"></span>
+    </div>
+  </aside>
+
+  <div id="legend" class="legend"></div>
+
+  <div id="tooltip" class="tooltip" style="display:none"></div>
+
+  <div id="splash" class="splash">
+    <div class="splash-inner">
+      <div class="splash-glyph">⬡</div>
+      <h1 class="splash-title">SOLAR<strong>SIM</strong></h1>
+      <p class="splash-sub">Visualiseur de trajectoires planétaires</p>
+
+      <div id="splash-status" class="splash-status">Chargement de trajectoire.json…</div>
+      <div class="splash-bar-wrap">
+        <div id="splash-bar" class="splash-bar"></div>
+      </div>
+
+      <div id="splash-fallback" style="display:none; margin-top:12px; text-align:center">
+        <p class="splash-hint">
+          Placez <strong>trajectoire.json</strong> dans le même dossier<br>
+          et ouvrez via un serveur local, ou chargez le manuellement :
+        </p>
+        <button class="btn-primary btn-large" style="margin-top:10px"
+                onclick="document.getElementById('file-input').click()">
+          Charger trajectoire.json
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
